@@ -1,0 +1,10 @@
+--- # Poggit-CI Manifest. Open the CI at https://poggit.pmmp.io/ci/armorshard1/pmholograms
+build-by-default: true
+branches:
+- main
+projects:
+  pmholograms:
+    path: ""
+    model: virion
+    type: library
+...
