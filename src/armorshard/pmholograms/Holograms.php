@@ -15,6 +15,7 @@ final class Holograms {
 	private static array $holograms = [];
 
 	/**
+	 * Create and spawn a hologram
 	 * @param array<string|Player> $playerList
 	 */
 	public static function createHologram(string $id, string $title, string $text, Position $pos, HologramVisibility $visibility, array $playerList) : Hologram {
@@ -38,6 +39,9 @@ final class Holograms {
 		return self::$holograms[$id] ?? null;
 	}
 
+	/**
+	 * Destroy the given hologram
+	 */
 	public static function deleteHologram(Hologram $hologram) : void {
 		$hologram->close();
 		$k = array_search($hologram, self::$holograms, true);
@@ -46,6 +50,9 @@ final class Holograms {
 		}
 	}
 
+	/**
+	 * Destroy the hologram with the given id, if any
+	 */
 	public static function deleteHologramById(string $id) : void {
 		$h = self::getHologramById($id);
 		if ($h !== null) {

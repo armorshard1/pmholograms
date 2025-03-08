@@ -15,7 +15,7 @@ final class Hologram {
 
 	/**
 	 * @internal
-	 *
+	 * Do not use in plugins. Use Holograms::createHologram() instead
 	 * @param array<string, mixed> $playerSet
 	 */
 	public function __construct(
@@ -59,6 +59,7 @@ final class Hologram {
 
 	/**
 	 * @internal
+	 * Do not use in plugins. Use Holograms::deleteHologram() or Holograms::deleteHologramById() instead
 	 */
 	public function close() : void {
 		if ($this->chunkListener !== null) {
