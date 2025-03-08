@@ -94,7 +94,9 @@ final class Hologram {
 	}
 
 	private function onChunkLoad(int $chunkX, int $chunkZ, Chunk $chunk) : void {
-		$this->entity = $this->createEntity();
-		$this->entity->spawnToAll();
+		if ($this->entity === null) {
+			$this->entity = $this->createEntity();
+			$this->entity->spawnToAll();
+		}
 	}
 }
