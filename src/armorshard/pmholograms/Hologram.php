@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace armorshard\pmholograms;
 
 use pocketmine\entity\Location;
+use pocketmine\event\world\WorldLoadEvent;
+use pocketmine\event\world\WorldUnloadEvent;
+use pocketmine\math\Vector3;
 use pocketmine\utils\TextFormat;
 use pocketmine\world\format\Chunk;
-use pocketmine\world\Position;
+use pocketmine\world\World;
+use pocketmine\world\WorldManager;
 
 final class Hologram {
 	private ?HologramEntity $entity;
@@ -22,15 +26,23 @@ final class Hologram {
 		public readonly string $id,
 		private string $title,
 		private string $text,
-		public readonly Position $pos,
+		private readonly WorldManager $worldManager,
+		public readonly Vector3 $pos,
+		public readonly string $worldName,
 		public readonly HologramVisibility $visibility,
 		public readonly array $playerSet,
 	) {
-		$this->entity = $this->createEntity();
-		$this->entity->spawnToAll();
+		$world = $worldManager->getWorldByName($worldName);
+		if ($world !== null) {
+			$this->entity = $this->createEntity($world);
+			$this->entity->spawnToAll();
 
-		$this->chunkListener = new HologramChunkListener($this->onChunkLoad(...), $this->onChunkUnload(...));
-		$pos->getWorld()->registerChunkListener($this->chunkListener, $pos->getFloorX() >> 4, $pos->getFloorZ() >> 4);
+			$this->chunkListener = new HologramChunkListener($this->onChunkLoad(...), $this->onChunkUnload(...));
+			$world->registerChunkListener($this->chunkListener, $pos->getFloorX() >> 4, $pos->getFloorZ() >> 4);
+		} else {
+			$this->entity = null;
+			$this->chunkListener = null;
+		}
 	}
 
 	public function getTitle() : string {
@@ -63,12 +75,41 @@ final class Hologram {
 	 */
 	public function close() : void {
 		if ($this->chunkListener !== null) {
-			$this->pos->getWorld()->unregisterChunkListener($this->chunkListener, $this->pos->getFloorX() >> 4, $this->pos->getFloorZ() >> 4);
+			$world = $this->worldManager->getWorldByName($this->worldName);
+			if ($world !== null) {
+				$world->unregisterChunkListener($this->chunkListener, $this->pos->getFloorX() >> 4, $this->pos->getFloorZ() >> 4);
+			}
 			$this->chunkListener = null;
 		}
 		if ($this->entity !== null) {
 			$this->entity->flagForDespawn();
 			$this->entity = null;
+		}
+	}
+
+	/**
+	 * @internal
+	 * Do not use in plugins
+	 */
+	public function onWorldLoad(WorldLoadEvent $event) : void {
+		$world = $event->getWorld();
+		if ($world->getFolderName() === $this->worldName) {
+			$this->entity = $this->createEntity($world);
+			$this->entity->spawnToAll();
+
+			$this->chunkListener = new HologramChunkListener($this->onChunkLoad(...), $this->onChunkUnload(...));
+			$world->registerChunkListener($this->chunkListener, $this->pos->getFloorX() >> 4, $this->pos->getFloorZ() >> 4);
+		}
+	}
+
+	/**
+	 * @internal
+	 * Do not use in plugins
+	 */
+	public function onWorldUnload(WorldUnloadEvent $event) : void {
+		$world = $event->getWorld();
+		if ($world->getFolderName() === $this->worldName) {
+			$this->close();
 		}
 	}
 
@@ -84,8 +125,8 @@ final class Hologram {
 		}
 	}
 
-	private function createEntity() : HologramEntity {
-		$ent = new HologramEntity(Location::fromObject($this->pos, $this->pos->getWorld()), $this->visibility, $this->playerSet);
+	private function createEntity(World $world) : HologramEntity {
+		$ent = new HologramEntity(Location::fromObject($this->pos, $world), $this->visibility, $this->playerSet);
 		$ent->setNameTag($this->getNameTagText());
 		return $ent;
 	}
@@ -96,8 +137,11 @@ final class Hologram {
 
 	private function onChunkLoad(int $chunkX, int $chunkZ, Chunk $chunk) : void {
 		if ($this->entity === null) {
-			$this->entity = $this->createEntity();
-			$this->entity->spawnToAll();
+			$world = $this->worldManager->getWorldByName($this->worldName);
+			if ($world !== null) {
+				$this->entity = $this->createEntity($world);
+				$this->entity->spawnToAll();
+			}
 		}
 	}
 }
