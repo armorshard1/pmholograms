@@ -14,9 +14,7 @@
     },
     "license": "AGPL-3.0",
     "autoload": {
-        "psr-4": {
-            "armorshard\\pmholograms\\": "src/"
-        }
+        "classmap": ["src"]
     },
     "authors": [
         {
