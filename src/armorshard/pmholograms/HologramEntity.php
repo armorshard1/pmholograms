@@ -11,16 +11,15 @@ use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\nbt\tag\CompoundTag;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
 use pocketmine\player\Player;
-use function in_array;
 
 /**
  * @internal
  */
 class HologramEntity extends Entity {
 	/**
-	 * @param array<string> $playerList
+	 * @param array<string, mixed> $playerSet
 	 */
-	public function __construct(Location $location, private HologramVisibility $visibility, private array $playerList) {
+	public function __construct(Location $location, private HologramVisibility $visibility, private array $playerSet) {
 		parent::__construct($location);
 	}
 
@@ -35,9 +34,9 @@ class HologramEntity extends Entity {
 	}
 
 	public function spawnTo(Player $player) : void {
-		if ($this->visibility === HologramVisibility::BlockList && !in_array($player->getName(), $this->playerList, true)) {
+		if ($this->visibility === HologramVisibility::BlockList && !isset($this->playerSet[$player->getName()])) {
 			parent::spawnTo($player);
-		} elseif ($this->visibility === HologramVisibility::AllowList && in_array($player->getName(), $this->playerList, true)) {
+		} elseif ($this->visibility === HologramVisibility::AllowList && isset($this->playerList[$player->getName()])) {
 			parent::spawnTo($player);
 		}
 	}

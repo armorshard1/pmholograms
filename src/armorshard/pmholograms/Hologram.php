@@ -16,7 +16,7 @@ final class Hologram {
 	/**
 	 * @internal
 	 *
-	 * @param array<string> $playerList
+	 * @param array<string, mixed> $playerSet
 	 */
 	public function __construct(
 		public readonly string $id,
@@ -24,7 +24,7 @@ final class Hologram {
 		private string $text,
 		public readonly Position $pos,
 		public readonly HologramVisibility $visibility,
-		public readonly array $playerList,
+		public readonly array $playerSet,
 	) {
 		$this->entity = $this->createEntity();
 		$this->entity->spawnToAll();
@@ -84,7 +84,7 @@ final class Hologram {
 	}
 
 	private function createEntity() : HologramEntity {
-		$ent = new HologramEntity(Location::fromObject($this->pos, $this->pos->getWorld()), $this->visibility, $this->playerList);
+		$ent = new HologramEntity(Location::fromObject($this->pos, $this->pos->getWorld()), $this->visibility, $this->playerSet);
 		$ent->setNameTag($this->getNameTagText());
 		return $ent;
 	}
