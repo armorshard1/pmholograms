@@ -31,6 +31,7 @@ class HologramEntity extends Entity {
 		$this->setNoClientPredictions(true);
 		$this->setNameTagVisible(true);
 		$this->setNameTagAlwaysVisible(true);
+		$this->setScale(0.01);
 	}
 
 	public function spawnTo(Player $player) : void {
@@ -42,7 +43,7 @@ class HologramEntity extends Entity {
 	}
 
 	protected function getInitialSizeInfo() : EntitySizeInfo {
-		return new EntitySizeInfo(1.8, 0.6, 1.62);
+		return new EntitySizeInfo(0.01, 0.01);
 	}
 
 	protected function getInitialDragMultiplier() : float {
