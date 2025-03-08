@@ -2,7 +2,7 @@
     "name": "armorshard/pmholograms",
     "description": "Floating text virion for PocketMine-MP",
     "type": "library",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "require": {
         "pocketmine/pocketmine-mp": "^5.0.0"
     },
