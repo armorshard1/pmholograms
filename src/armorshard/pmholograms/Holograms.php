@@ -6,6 +6,8 @@ namespace armorshard\pmholograms;
 
 use InvalidArgumentException;
 use LogicException;
+use pocketmine\event\entity\EntityDamageByEntityEvent;
+use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\EventPriority;
 use pocketmine\event\world\WorldLoadEvent;
 use pocketmine\event\world\WorldUnloadEvent;
@@ -27,13 +29,15 @@ final class Holograms {
 		self::$plugin = $plugin;
 		$plugin->getServer()->getPluginManager()->registerEvent(WorldLoadEvent::class, self::onWorldLoad(...), EventPriority::MONITOR, $plugin);
 		$plugin->getServer()->getPluginManager()->registerEvent(WorldUnloadEvent::class, self::onWorldUnload(...), EventPriority::MONITOR, $plugin);
+		$plugin->getServer()->getPluginManager()->registerEvent(EntityDamageEvent::class, self::onDamage(...), EventPriority::MONITOR, $plugin, true);
 	}
 
 	/**
 	 * Create and spawn a hologram
+	 * @param list<HologramPage>   $pages
 	 * @param array<string|Player> $playerList
 	 */
-	public static function createHologram(string $id, string $title, string $text, Vector3 $pos, string $worldName, HologramVisibility $visibility, array $playerList) : Hologram {
+	public static function createHologram(string $id, array $pages, Vector3 $pos, string $worldName, HologramVisibility $visibility, array $playerList) : Hologram {
 		if (self::$plugin === null) {
 			throw new LogicException("Cannot call creatHologram before calling init");
 		}
@@ -48,7 +52,7 @@ final class Holograms {
 		if (isset(self::$holograms[$id])) {
 			throw new HologramsException("Hologram with id `$id` already exists");
 		}
-		$h = new Hologram($id, $title, $text, self::$plugin->getServer()->getWorldManager(), $pos, $worldName, $visibility, $playerSet);
+		$h = new Hologram($id, $pages, self::$plugin->getServer()->getWorldManager(), $pos, $worldName, $visibility, $playerSet);
 		self::$holograms[$id] = $h;
 		return $h;
 	}
@@ -81,13 +85,30 @@ final class Holograms {
 
 	private static function onWorldLoad(WorldLoadEvent $event) : void {
 		foreach (self::$holograms as $hologram) {
-			$hologram->onWorldLoad($event);
+			$hologram->onWorldLoad($event->getWorld());
 		}
 	}
 
 	private static function onWorldUnload(WorldUnloadEvent $event) : void {
 		foreach (self::$holograms as $hologram) {
-			$hologram->onWorldUnload($event);
+			$hologram->onWorldUnload($event->getWorld());
+		}
+	}
+
+	private static function onDamage(EntityDamageEvent $event) : void {
+		if (!($event instanceof EntityDamageByEntityEvent)) {
+			return;
+		}
+		$entity = $event->getEntity();
+		if (!($entity instanceof HologramEntity)) {
+			return;
+		}
+		$damager = $event->getDamager();
+		if (!($damager instanceof Player)) {
+			return;
+		}
+		foreach (self::$holograms as $hologram) {
+			$hologram->onDamage($entity, $damager);
 		}
 	}
 

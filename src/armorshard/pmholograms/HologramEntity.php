@@ -4,22 +4,32 @@ declare(strict_types=1);
 
 namespace armorshard\pmholograms;
 
+use pocketmine\block\VanillaBlocks;
 use pocketmine\entity\Entity;
 use pocketmine\entity\EntitySizeInfo;
 use pocketmine\entity\Location;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\network\mcpe\convert\TypeConverter;
 use pocketmine\network\mcpe\protocol\types\entity\EntityIds;
+use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataCollection;
+use pocketmine\network\mcpe\protocol\types\entity\EntityMetadataProperties;
 use pocketmine\player\Player;
 
 /**
  * @internal
  */
-class HologramEntity extends Entity {
+final class HologramEntity extends Entity {
 	/**
 	 * @param array<string, mixed> $playerSet
 	 */
-	public function __construct(Location $location, private HologramVisibility $visibility, private array $playerSet) {
+	public function __construct(
+		Location $location,
+		private readonly int $page,
+		private HologramVisibility $visibility,
+		private array $playerSet,
+		private readonly PageViewerMap $viewMap
+	) {
 		parent::__construct($location);
 	}
 
@@ -31,19 +41,19 @@ class HologramEntity extends Entity {
 		$this->setNoClientPredictions(true);
 		$this->setNameTagVisible(true);
 		$this->setNameTagAlwaysVisible(true);
-		$this->setScale(0.01);
 	}
 
 	public function spawnTo(Player $player) : void {
-		if ($this->visibility === HologramVisibility::BlockList && !isset($this->playerSet[$player->getName()])) {
+		$name = $player->getName();
+		if ($this->visibility === HologramVisibility::BlockList && !isset($this->playerSet[$name]) && $this->viewMap->get($name) === $this->page) {
 			parent::spawnTo($player);
-		} elseif ($this->visibility === HologramVisibility::AllowList && isset($this->playerList[$player->getName()])) {
+		} elseif ($this->visibility === HologramVisibility::AllowList && isset($this->playerSet[$name]) && $this->viewMap->get($name) === $this->page) {
 			parent::spawnTo($player);
 		}
 	}
 
 	protected function getInitialSizeInfo() : EntitySizeInfo {
-		return new EntitySizeInfo(0.01, 0.01);
+		return new EntitySizeInfo(0.5, 0.5);
 	}
 
 	protected function getInitialDragMultiplier() : float {
@@ -55,7 +65,7 @@ class HologramEntity extends Entity {
 	}
 
 	public static function getNetworkTypeId() : string {
-		return EntityIds::PLAYER;
+		return EntityIds::FALLING_BLOCK;
 	}
 
 	public function isFireProof() : bool {
@@ -66,5 +76,18 @@ class HologramEntity extends Entity {
 		return false;
 	}
 
-	public function attack(EntityDamageEvent $source) : void {}
+	protected function syncNetworkData(EntityMetadataCollection $properties) : void{
+		parent::syncNetworkData($properties);
+
+		$properties->setInt(EntityMetadataProperties::VARIANT, TypeConverter::getInstance()->getBlockTranslator()->internalIdToNetworkId(VanillaBlocks::AIR()->getStateId()));
+	}
+
+	public function attack(EntityDamageEvent $source) : void {
+		$source->call();
+		if($source->isCancelled()){
+			return;
+		}
+
+		$this->setLastDamageCause($source);
+	}
 }
